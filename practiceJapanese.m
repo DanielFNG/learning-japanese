@@ -1,6 +1,10 @@
 %% This function is for practicising Japanese scripts.
-% It takes two arguments, a string which should be 'hiragana' or
-% 'katakana'. A second argument should specify 'english' or 'japanese'.
+% It takes three arguments, a string which should be 'hiragana' or
+% 'katakana'. A second argument should specify 'english' or 'japanese'. The
+% third argument is a string of Romanji letters, which determines what is
+% to be tested. For example, if 't' is present in the string, all Japanese
+% consonant-vowel sounds starting with 't' are included. For vowels, any of
+% 'aeiou' will do. For everything, the string should be 'ALL' in all caps. 
 %
 % If 'japanese' is specified, a Japanese symbol is shown.
 % The function will prompt for user input. If the correct
@@ -13,48 +17,43 @@
 % correpsonding to the sound, and write 'r' or 'ready' when done. Then, the
 % function will show the correct symbol, and move on to the next. 
 
-function practiceJapanese(script, mode)
+function practiceJapanese(script, mode, string)
 
-if nargin < 0 || nargin > 2
-    error('Require at least 1 and no more than 2 arguments.');
+% Parse the script type and the mode. 
+if nargin < 2 || nargin > 3
+    error('Require at least 2 and no more than 3 arguments.');
 else
     if ~(strcmp(script, 'hiragana') || strcmp(script, 'katakana'))
         error('First argument should specify hiragana or katakana.');
     end
-    if nargin == 2
-        if ~strcmp(mode, 'english')
-            error('Optional argument not recognised.')
-        end
-    else
-        mode = 'japanese';
+    if ~(strcmp(mode, 'english') || strcmp(script, 'japanese'))
+        error('Only English or Japanese are accepted modes.');
     end
 end
 
-% Create map from sounds to Hiragana.
-load('hiragana.mat')
+% Parse the 'string' input argument to decide which characters to include.
+[english_set, hiragana_set] = loadLanguageSets(string); % for now Hiragana only
 
-vowels_hiragana = {ha(1), ha(2), ha(3), ha(4), ha(5)};
-vowels_english = {'a', 'i', 'u', 'e', 'o'};
-
-k_hiragana = {ha(6), ha(7), ha(8), ha(9), ha(10)};
-k_english = {'ka', 'ki', 'ku', 'ke', 'ko'};
-
-s_hiragana = {ha(11), ha(12), ha(13), ha(14), ha(15)};
-s_english = {'sa', 'shi', 'su', 'se', 'so'};
-
+% Change which is the 'key' and which is the 'value' depending on the
+% specified mode. 
 if strcmp(mode, 'english')
-    keySet = [vowels_english, k_english, s_english];
-    valueSet = [vowels_hiragana, k_hiragana, s_hiragana];
+    keySet = english_set;
+    valueSet = hiragana_set;
 else
-    valueSet = [vowels_english, k_english, s_english];
-    keySet = [vowels_hiragana, k_hiragana, s_hiragana];
+    valueSet = english_set;
+    keySet = hiragana_set;
 end
+
+% Save the number of characters we've ended up with.
 n_letters = size(keySet,2);
 
-
+% This code is supposed to make the graphs occupy the top/right and
+% bottom/right quadrants of the screen, regardless of resolution.
+% Unfortunately it doesn't really work and I expect it is resolution
+% dependent, but as I'll just be running this on my laptop anyway I don't
+% really want to invest a lot of time here. 
 ss = get(0,'screensize');
 b = 7; % border around figures is 7 pixels wide
-%TODO different for various operating systems and possibly configurations.
 p = 0; % extra padding pixels from left edge of screen
 
 if ispc
@@ -62,7 +61,6 @@ if ispc
     i = (1:2) + regexp(win,'Windows ','end');
     switch win(i)
         case '10'
-            b = 0;
             p = 10;
         otherwise
             % other cases will be added in the future
@@ -70,52 +68,52 @@ if ispc
 end
 
 fwp = ss(3)/2-2*b-p; % figure width in pixels
-b = b+p;
 n = 5;
-%set(0,'defaultfigureposition',[b ss(4)/n, fwp, ss(4)*(1-2/n)])
-%clear
-
-
-
-rng('shuffle');
 
 bottom = [ss(3)/2+p/2, ss(4)*1/20, fwp, ss(4)*(1-3/n)-(ss(4)/20)/2];
 top = [ss(3)/2+p/2, ss(4)/2+(ss(4)*1/20)/2, fwp, ss(4)*(1-3/n)-(ss(4)/20)/2];
 
+% Draw a figure for input. If the mode is 'english', also draw a window for
+% drawing Hiragana. 
 figure('Name','Display window','NumberTitle','off', 'Units', 'pixels', 'Position', top)
 dwin = uicontrol('Style', 'text', 'FontSize', 150, 'ForegroundColor', 'b', 'Units','normalized','Position', [0 0 1 0.95]);
 
-draw = figure('Name','Draw window','NumberTitle','off', 'Units', 'pixels', 'Position', bottom, 'Resize', 'off');
-axis([0 1 0 1]);
+if strcmp(mode, 'english')
+    draw = figure('Name','Draw window','NumberTitle','off', 'Units', 'pixels', 'Position', bottom, 'Resize', 'off');
+    axis([0 1 0 1]);
+end
 
-drawnow
-commandwindow
+% Draw the figures.
+drawnow 
 
+% Take us back to the command window for plotting.
+commandwindow 
+
+% Shuffle random seed.
+rng('shuffle');
+
+% Start learning Japanese. 
 while true
-    fprintf('You are trying to learn Japanese!\nYou have selected %s mode.\n', mode);
+    fprintf('You are trying to learn Japanese!\nYou have selected %s mode.\nYou will be tested on %i Japanese sounds.\n', mode, n_letters);
     order = randperm(n_letters);
     if strcmp(mode, 'english')
         for i=1:n_letters
-            fprintf('Please draw the %s for the sound: \n\n', script);
+            fprintf('\nPlease draw the %s for the sound: \n\n', script);
             
             set(dwin, 'String', [keySet{order(i)} '?'])
-            fprintf('%s\n\n', keySet{order(i)});
-            %draw = uicontrol('Style', 'text', 'FontSize', 150, 'ForegroundColor', 'b', 'Units','normalized','Position', [0 0 1 0.95]); 
+            fprintf('%s\n\n', keySet{order(i)}); 
             if i > 1
                 for j=1:size(h_array,2)
                     h_array(1,j).delete();
                 end
             end
-            
          
             h_array = [];
             figure(draw);
             while true
                 h = imfreehand('Closed',false);
                 h_array = [h_array h];
-                data=get(h); 
-                xydata=get(data.Children(4));
-                k = waitforbuttonpress;
+                waitforbuttonpress
                 if strcmp(get(gcf,'Selectiontype'), 'alt');
                     break
                 end
@@ -126,21 +124,24 @@ while true
             set(dwin, 'String', [keySet{order(i)} ' = ' valueSet{order(i)}])
             
             fprintf('Did you get it right?\n');
-            next = 0;
-            while ~(strcmp(next, 'n'))
-                commandwindow
-                next = input('Type n to move on.\n', 's');
+            fprintf('Right click to move on.\n');
+            while true
+                waitforbuttonpress;
+                if strcmp(get(gcf,'Selectiontype'), 'alt');
+                    break
+                end
             end
         end
     else
         display('hi');
     end
-    fprintf('No more letters in dictionary!\n');
+    fprintf('\nNo more letters in dictionary!\n');
     restart = 0;
     while ~(strcmp(restart, 'y') || strcmp(restart, 'e'))
+        commandwindow
         restart = input('Type y to restart, or e to exit.\n', 's');
         if strcmp(restart, 'e')
-            display('Bye!')
+            fprintf('\nBye!\n')
             delete(gcf)
             return
         end
