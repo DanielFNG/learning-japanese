@@ -138,22 +138,14 @@ while true
             
             set(dwin, 'String', [keySet{order(i)} '?'])
          
-            tries = 0;
-            correct = false;
             while true
                 h = input('','s');
-                if strcmpi(h, valueSet{order(i)})
-                    correct = true;
-                    break
-                elseif (strcmpi(h, 'skip') && tries >= 1)
+                if strcmpi(h, valueSet{order(i)});
                     break
                 end
-                fprintf('Nope! Try again. Enter ''skip'' to skip.\n')
-                tries = tries + 1;
+                fprintf('Nope! Try again. \n')
             end
-            if correct == 1
-                fprintf('Correct! \n'); 
-            end
+            fprintf('Correct! \n'); 
             set(dwin, 'String', 'GJ!')
         end
     end
